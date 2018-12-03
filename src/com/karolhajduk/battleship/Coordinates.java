@@ -1,29 +1,26 @@
 package com.karolhajduk.battleship;
 
 public class Coordinates {
-    private int a, b;
+    private int x, y;
 
-    public Coordinates(){
-
-    }
-    public Coordinates(int a, int b) {
-        this.a = a;
-        this.b = b;
+    Coordinates(int x, int y) {
+        this.x = x;
+        this.y = y;
     }
 
-    public int getA() {
-        return a;
+    public int getX() {
+        return x;
     }
 
-    public void setA(int a) {
-        this.a = a;
+    public void setX(int x) {
+        this.x = x;
     }
 
-    public int getB() {
-        return b;
+    public int getY() {
+        return y;
     }
 
-    public void setB(int b) {
-        this.b = b;
+    public void setY(int y) {
+        this.y = y;
     }
 }
