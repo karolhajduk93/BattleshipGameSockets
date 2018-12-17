@@ -6,6 +6,7 @@ import java.awt.*;
 public class DrawBoardAndShips extends JComponent {
 
     private Captain player;
+    private static int wait = 0;
     DrawBoardAndShips(Captain player) {
         this.player = player;
     }
@@ -15,10 +16,19 @@ public class DrawBoardAndShips extends JComponent {
         super.paintComponent(g);
         Graphics2D g2D = (Graphics2D) g;
 
-        if (true)
+        g2D.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+
+        if (player.getReady() == 0) {
             paintStart(g2D);
-        else
-            g2D.drawRect(100,100, 100, 100);
+        }
+        else if(player.getReady() == 1) {
+            paintWait(g2D);
+        }
+        else if(player.getReady() == 2){
+            paintBoards(g2D);
+        }
+
     }
 
     public void paintStart(Graphics2D g){
@@ -39,24 +49,46 @@ public class DrawBoardAndShips extends JComponent {
         //Draw coordinates
 
         g.setStroke(new BasicStroke(2));
+
         g.setColor(new Color(0, 0, 1, (float) 0.7));
-
-        player.getShips().forEach(ship -> g.drawRect(ship.getCoordinates().getX(), ship.getCoordinates().getY(),
+        player.getShips().stream().filter(ship -> ship.isHorizontal()).forEach(ship -> g.drawRect(ship.getCoordinates().getX(), ship.getCoordinates().getY(),
                 ship.getSize()*32, 32));
+        player.getShips().stream().filter(ship -> !ship.isHorizontal()).forEach(ship -> g.drawRect(ship.getCoordinates().getX(), ship.getCoordinates().getY(),
+                32, ship.getSize()*32));
+
+        g.setColor(new Color(0, 0, 1, (float) 0.1));
+        player.getShips().stream().filter(ship -> ship.isHorizontal()).forEach(ship -> g.fillRect(ship.getCoordinates().getX(), ship.getCoordinates().getY(),
+                ship.getSize()*32, 32));
+        player.getShips().stream().filter(ship -> !ship.isHorizontal()).forEach(ship -> g.fillRect(ship.getCoordinates().getX(), ship.getCoordinates().getY(),
+                32, ship.getSize()*32));
+    }
 
 
-        /*g.drawRect(600, 100, 4 * 32, 32); //4
+    private void paintWait(Graphics2D g2D) {
+        wait++;
+        g2D.drawString("Waiting for player",480, 230);
+        if( wait / 20 == 0) {
+            g2D.fillOval(500, 250, 8, 8);
+        }
+        else if( wait / 20 == 1) {
+            g2D.fillOval(500, 250, 8, 8);
+            g2D.fillOval(520, 250, 8, 8);
+        }
+        else if( wait / 20 == 2){
+            g2D.fillOval(500, 250, 8, 8);
+            g2D.fillOval(520, 250, 8, 8);
+            g2D.fillOval(540, 250, 8, 8);
+        }
+        else if( wait / 20 == 3){
+            wait = 0;
+        }
+    }
 
-        g.drawRect(600, 150, 3 * 32, 32); //3
-        g.drawRect(600 + 3 * 32 + 10, 150, 3 * 32, 32); //3
+    private void paintBoards(Graphics2D g2D) {
+        paintStart(g2D);
 
-        g.drawRect(600, 200, 2 * 32, 32); //2
-        g.drawRect(600 + 2 * 32 + 10, 200, 2 * 32, 32); //2
-        g.drawRect(600 + (2 * 32 + 10) * 2, 200, 2 * 32, 32); //2
-
-        g.drawRect(600, 250, 32, 32); //1
-        g.drawRect(600 + (32 + 10), 250, 32, 32); //1
-        g.drawRect(600 + 2 * (32 + 10), 250, 32, 32); //1
-        g.drawRect(600 + 3 * (32 + 10), 250, 32, 32); //1*/
+        g2D.setColor(UIManager.getColor("Panel.background"));
+        g2D.fillRect(550, 40, 300, 30);
     }
 }
+
