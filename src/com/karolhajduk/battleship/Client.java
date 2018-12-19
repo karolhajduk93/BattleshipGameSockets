@@ -17,11 +17,14 @@ public class Client {
         System.out.println("CLIENT");
         socket = new Socket(host, 6666);
         player.setReady(2);
+
+        BattleShipGame.connected = socket.isConnected();
+
         dataInputStream = new DataInputStream(socket.getInputStream());
         dataOutputStream = new DataOutputStream(socket.getOutputStream());
         bufferedReader = new BufferedReader(new InputStreamReader(System.in));
 
-        System.out.println(socket.isConnected());
+        //System.out.println(socket.isConnected());
         System.out.println("CLIENT: BEFORE LOOP");
         while(!message1.equals("WIN") || !message1.equals("LOOSE")){
             BattleShipGame.coordinatesInput = dataInputStream.readUTF();

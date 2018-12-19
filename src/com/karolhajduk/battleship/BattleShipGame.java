@@ -16,6 +16,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
     static String coordinatesInput = "INPUT", coordinatesOutput = "OUTPUT";
     static boolean moveDone = false;
     private static int i = 0;
+    static boolean connected = false;
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new BattleShipGame());
@@ -103,7 +104,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
                         .forEach(ship -> ship.setHorizontal(!ship.isHorizontal()));
 
                 //ship don't overlap space of other ship, if does revert rotation to previous state
-
                 player.getShips().stream()
                         .filter(ship -> ship.getBounds().contains(e.getPoint()))
                         .filter(ship -> ship.getId() != newShip.get().getId())
@@ -172,57 +172,53 @@ public class BattleShipGame extends JFrame implements ActionListener {
 
     public void serverOrClientDecision(int decision, Captain player) {
 
-
-
         Object[] options = {"CREATE", "JOIN", "EXIT"};
         Object[] options2 = {"BACK", "TRY AGAIN", "EXIT"};
-        if ( decision == JOptionPane.YES_OPTION){
+        if (decision == JOptionPane.YES_OPTION) {
             decision = JOptionPane.showOptionDialog(this, "Create game or join one?", "Battleship Game",
                     JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, null);
         }
 
 
-        if (decision == JOptionPane.YES_OPTION ) {
+        if (decision == JOptionPane.YES_OPTION) {
             //create server
 
-                SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                    @Override
-                    protected Void doInBackground() throws Exception {
-                        Server server = new Server(player);
-                        return null;
-                    }
-
-
-                };
-                worker.execute();
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    Server server = new Server(player);
+                    return null;
+                }
+            };
+            worker.execute();
 
         } else if (decision == JOptionPane.NO_OPTION) {
             //getting IP
             String serversIP = JOptionPane.showInputDialog("Type server's IP");
-                //creating client
-                SwingWorker<Void, Boolean> worker = new SwingWorker<>() {
-                    @Override
-                    protected Void doInBackground() throws Exception {
-                        System.out.println("o chuj chodzi");
-                        Client client = new Client(serversIP, player);
-                        publish(client.socket.isConnected());
-                        System.out.println(client.socket.isConnected());
-                        return null;
-                    }
 
-                    @Override
-                    protected void process(java.util.List<Boolean> chunks) {
-                        System.out.println(chunks.stream().findAny().get());
-                    }
-                };
-                worker.execute();
-               /* decision = JOptionPane.showOptionDialog(this, "Host not responding", "Join Game",
+            //creating client
+            SwingWorker<Void, Boolean> worker1 = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws IOException {
+                    Client client = new Client(serversIP, player);
+                    return null;
+                }
+            };
+            worker1.execute();
+
+            while (!worker1.isDone()) {
+                if(connected == true)
+                    break;
+            }
+
+            if (!connected) {
+                decision = JOptionPane.showOptionDialog(this, "Host not responding", "Join Game",
                         JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options2, null);
-
-                serverOrClientDecision(decision, player);*/
-
+                serverOrClientDecision(decision, player);
+            }
         }
     }
 }
+
 
 
