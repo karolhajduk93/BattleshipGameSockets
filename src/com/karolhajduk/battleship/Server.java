@@ -11,8 +11,7 @@ class Server extends Thread {
     DataInputStream dataInputStream;
     DataOutputStream dataOutputStream;
 
-    String message1 = "", message2 = "";
-
+    String start = "", message1 = "";
 
     public Server(Captain player) throws IOException {
 
@@ -26,21 +25,30 @@ class Server extends Thread {
         player.setReady(2);
         dataInputStream = new DataInputStream(socket.getInputStream());
         dataOutputStream = new DataOutputStream(socket.getOutputStream());
-
-        System.out.println("SERVER: BEFORE LOOP");
+        //send my logic table at the beginning of the game //////////////////////////////////////////////
+        for (boolean[] row: player.getMyBoard()){
+            for(boolean value: row){
+                if(value)
+                    start += "1";
+                else
+                    start += "0";
+            }
+        }
+        dataOutputStream.writeUTF(start);
+        System.out.println(start);
         while(!message1.equals("WIN") || !message1.equals("LOOSE")){
 
-            System.out.println("Server");
-            //send 2 messages
-                //one: hit or miss
+            //System.out.println("Server");
+            /*//send 1 messages
                 //other: shoot
             BattleShipGame.coordinatesInput = dataInputStream.readUTF();
+
             System.out.println(BattleShipGame.coordinatesInput);
             if(BattleShipGame.moveDone) {
 
                 dataOutputStream.writeUTF(BattleShipGame.coordinatesOutput);
                 BattleShipGame.coordinatesOutput = "";
-            }
+            }*/
             dataOutputStream.flush();
         }
 

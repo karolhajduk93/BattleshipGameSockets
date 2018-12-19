@@ -35,7 +35,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
 
         Timer timer = new Timer(20, this);
 
-
         DrawBoardAndShips boardAndShips = new DrawBoardAndShips(player);
 
         timer.start();
@@ -58,12 +57,14 @@ public class BattleShipGame extends JFrame implements ActionListener {
             //check if all ships are on board
             //set ready = true
 
-            //set logic
-            for (Ship ship : player.getShips()) {
-                player.setMyBoard(ship);
-            }
             if (player.getShips().stream().filter(Ship::isShipOnBoard).count() == 10 && e.getSource() == ready) {
 
+                //set logic
+                for (Ship ship : player.getShips()) {
+                    player.setMyBoard(ship);
+                }
+
+                //establish network connection
                 serverOrClientDecision(JOptionPane.YES_OPTION, player);
 
                 panel.remove(reset);
@@ -82,75 +83,25 @@ public class BattleShipGame extends JFrame implements ActionListener {
         boardAndShips.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
             public void mouseDragged(MouseEvent e) {
-                newShip.filter(Ship::isHorizontal)
-                        .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - ship.getSize() * 16, e.getY() - 16)));
-                newShip.filter(ship -> !ship.isHorizontal())
-                        .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - 16, e.getY() - ship.getSize() * 16)));
+                customMouseDragged(player, e);
             }
         });
 
         boardAndShips.addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
+                customMouseClicked(e, player);
 
-                //if clicked and playing (not starting)
-                //is in bound of other board
-
-                //ship is in bounds of BOARD after rotating
-                player.getShips().stream()
-                        .filter(ship -> ship.getBounds().contains(e.getPoint()))
-                        .filter(ship -> (logicPosX < 11 && logicPosY + ship.getSize() < 11 && ship.isHorizontal())
-                                || (logicPosX + ship.getSize() < 11 && logicPosY < 11 && !ship.isHorizontal()))
-                        .forEach(ship -> ship.setHorizontal(!ship.isHorizontal()));
-
-                //ship don't overlap space of other ship, if does revert rotation to previous state
-                player.getShips().stream()
-                        .filter(ship -> ship.getBounds().contains(e.getPoint()))
-                        .filter(ship -> ship.getId() != newShip.get().getId())
-                        .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
-                        .forEach(ship -> newShip.get().setHorizontal(!newShip.get().isHorizontal()));
             }
 
             @Override
             public void mousePressed(MouseEvent e) {
-                logicPosX = logicPosY = -1;
-
-                //picking up ship
-                newShip = player.getShips().stream().
-                        filter(ship -> ship.getBounds().contains(e.getPoint()))
-                        .findAny();
-
-                newShip.ifPresent(newShip -> start = newShip.getCoordinates());
+                customMousePressed(e, player);
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (newShip.isPresent()) {
-                    logicPosX = (newShip.get().getCoordinates().getX() - 150) / 32;
-                    logicPosY = (newShip.get().getCoordinates().getY() - 50) / 32;
-
-                    //ship placed on board
-                    if (((logicPosX + newShip.get().getSize() < 11) && (logicPosY < 11) && newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)
-                            || ((logicPosX < 11) && (logicPosY + newShip.get().getSize() < 11) && !newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)) {
-                        //adjust to grid
-                        newShip.get().getCoordinates().setX(150 + logicPosX * 32);
-                        newShip.get().getCoordinates().setY(50 + logicPosY * 32);
-
-                        newShip.ifPresent(newShip -> newShip.setShipOnBoard(true));
-
-                        //ship don't overlap space of other ship, if does revert move
-                        player.getShips().stream()
-                                .filter(ship -> ship.getId() != newShip.get().getId())
-                                .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
-                                .forEach(ship -> {
-                                    newShip.get().setCoordinates(start);
-                                    newShip.get().setShipOnBoard(false);
-                                });
-                    } else {
-                        newShip.get().setHorizontal(true);
-                        newShip.get().setCoordinates(start);
-                    }
-                }
+                customMouseReleased(player);
             }
 
             @Override
@@ -167,7 +118,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         repaint();
-        //check for change
     }
 
     public void serverOrClientDecision(int decision, Captain player) {
@@ -207,7 +157,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
             worker1.execute();
 
             while (!worker1.isDone()) {
-                if(connected == true)
+                if (connected == true)
                     break;
             }
 
@@ -215,6 +165,108 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 decision = JOptionPane.showOptionDialog(this, "Host not responding", "Join Game",
                         JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options2, null);
                 serverOrClientDecision(decision, player);
+            }
+        }
+    }
+
+    public void customMouseDragged(Captain player, MouseEvent e) {
+        if (player.getReady() == 0) {
+            newShip.filter(Ship::isHorizontal)
+                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - ship.getSize() * 16, e.getY() - 16)));
+            newShip.filter(ship -> !ship.isHorizontal())
+                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - 16, e.getY() - ship.getSize() * 16)));
+        }
+    }
+
+    public void customMouseClicked(MouseEvent e, Captain player) {
+        if (player.getReady() == 0) {
+            //ship is in bounds of BOARD after rotating
+            System.out.println("Opsie doopsie");
+            player.getShips().stream()
+                    .filter(ship -> ship.getBounds().contains(e.getPoint()))
+                    .filter(ship -> (logicPosX < 11 && logicPosY + ship.getSize() < 11 && ship.isHorizontal())
+                            || (logicPosX + ship.getSize() < 11 && logicPosY < 11 && !ship.isHorizontal()))
+                    .forEach(ship -> ship.setHorizontal(!ship.isHorizontal()));
+
+            //ship don't overlap space of other ship, if does revert rotation to previous state
+
+
+            if(newShip.isPresent()) {
+                player.getShips().stream()
+                        .filter(ship -> ship.getId() != newShip.get().getId())
+                        .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
+                        .forEach(ship -> {
+                            newShip.get().setHorizontal(!newShip.get().isHorizontal());
+                            System.out.println(newShip.get().getSize());
+                        });
+            }
+
+        }
+    }
+
+    public void customMousePressed(MouseEvent e, Captain player) {
+        if (player.getReady() == 0) {
+            logicPosX = logicPosY = -1;
+
+            //picking up ship
+            newShip = player.getShips().stream().
+                    filter(ship -> ship.getBounds().contains(e.getPoint()))
+                    .findAny();
+
+            newShip.ifPresent(newShip -> start = newShip.getCoordinates());
+        } else if (player.getReady() == 2) {
+            System.out.println(e.getPoint().toString());
+            coordinatesOutput = Integer.toString(e.getX()) + "." + Integer.toString(e.getY());
+            //moveDone = true;
+
+            //clikam na plansze
+            //zamieniam na logiczne koordynaty
+            //wysylam koordynaty
+            //otrzymuje odpowiedz (rysuje)
+            //czekam na otrzymanie koordynatow (zmienna moja tura czy nie?)
+            //dostaje koordynaty
+            //sprawdzam (rysuje)
+            //wysylam odpowiedz (moja tura)
+            //RETURN
+
+            //VS
+            //wysylam na poczatku tablice logiczne (jade po kolei true albo false jako jedynki albo zera
+            //i zamieniam na logiczne  jakims loopie)
+            //clikam na plansze
+            //zmieniam na logiczne koordynaty
+            //wysylam koordynaty ( u siebie od razu to sprawdzam i rysuje) (koniec tury)
+            //dostaje koordynaty (rysuje) (moja tura)
+
+        }
+    }
+
+    public void customMouseReleased(Captain player) {
+        if (player.getReady() == 0) {
+            if (newShip.isPresent()) {
+                logicPosX = (newShip.get().getCoordinates().getX() - 150) / 32;
+                logicPosY = (newShip.get().getCoordinates().getY() - 50) / 32;
+
+                //ship placed on board
+                if (((logicPosX + newShip.get().getSize() < 11) && (logicPosY < 11) && newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)
+                        || ((logicPosX < 11) && (logicPosY + newShip.get().getSize() < 11) && !newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)) {
+                    //adjust to grid
+                    newShip.get().getCoordinates().setX(150 + logicPosX * 32);
+                    newShip.get().getCoordinates().setY(50 + logicPosY * 32);
+
+                    newShip.ifPresent(newShip -> newShip.setShipOnBoard(true));
+
+                    //ship don't overlap space of other ship, if does revert move
+                    player.getShips().stream()
+                            .filter(ship -> ship.getId() != newShip.get().getId())
+                            .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
+                            .forEach(ship -> {
+                                newShip.get().setCoordinates(start);
+                                newShip.get().setShipOnBoard(false);
+                            });
+                } else {
+                    newShip.get().setHorizontal(true);
+                    newShip.get().setCoordinates(start);
+                }
             }
         }
     }
