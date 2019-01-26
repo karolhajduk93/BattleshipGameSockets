@@ -17,24 +17,29 @@ public class Captain {
             200, 200, 200,
             250, 250, 250, 250};
 
-    private boolean[][] myBoard = new boolean[10][10];
-    private boolean[][] enemyBoard = new boolean[10][10];
+    private int[][] myBoard = new int[10][10];
+    private int[][] enemyBoard = new int[10][10];
     private boolean winLoseState = false;
     private int ready = 0;
+
+    public boolean isMyTurn() {
+        return myTurn;
+    }
+
+    public void setMyTurn(boolean myTurn) {
+        this.myTurn = myTurn;
+    }
+
+    private boolean myTurn = false; ////////////////////////////////
 
     public int getReady() {
         return ready;
     }
-
     public void setReady(int ready) {
         this.ready = ready;
     }
-
-
-
     public void initializeShips(){
         //create Ships inside ships list
-
         //Starting coordinates
         int k = 0;
         for (int i = 4; i > 0; i--) {
@@ -45,24 +50,40 @@ public class Captain {
         }
     }
 
-    public boolean[][] getMyBoard() {
+
+    public int[][] getMyBoard() {
         return myBoard;
     }
-
     public void setMyBoard(Ship ship) {
         int logicalX, logicalY;
         logicalX = (ship.getCoordinates().getX() - 150)/32;
         logicalY = (ship.getCoordinates().getY() - 50)/32;
         for (int i = 0; i < ship.getSize(); i++) {
             if(ship.isHorizontal())
-                myBoard[logicalX+i][logicalY] = true;
+                myBoard[logicalX+i][logicalY] = 1;
             else
-                myBoard[logicalX][logicalY+i] = true;
+                myBoard[logicalX][logicalY+i] = 1;
         }
     }
-
     public List<Ship> getShips() {
         return ships;
+    }
+
+    public int[][] getEnemyBoard() {
+        return enemyBoard;
+    }
+
+    public void setEnemyBoard(String enemyBoardString) {
+        int k = 0;
+        for(int i = 0; i < enemyBoard.length; i++) {
+            for (int j = 0; j < enemyBoard[i].length; j++) {
+                if (enemyBoardString.charAt(k) == '1')
+                    enemyBoard[j][i] = 1;
+                else
+                    enemyBoard[j][i] = 0;
+                k++;
+            }
+        }
     }
 
     public void resetPositions(){
@@ -75,8 +96,8 @@ public class Captain {
                 k++;
             }
         }
-        for (boolean[] booleans: myBoard) {
-            Arrays.fill(booleans, false);
+        for (int[] ints: myBoard) {
+            Arrays.fill(ints, 0);
         }
     }
 }

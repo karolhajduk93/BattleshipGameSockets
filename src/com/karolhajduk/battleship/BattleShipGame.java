@@ -6,23 +6,26 @@ import java.awt.event.*;
 import java.io.IOException;
 import java.util.Optional;
 
-
 public class BattleShipGame extends JFrame implements ActionListener {
 
+
+    //this 268, Draw 112 /////////////////////////////////////
     private Optional<Ship> newShip;
     private int logicPosX;
     private int logicPosY;
     private Coordinates start;
-    static String coordinatesInput = "INPUT", coordinatesOutput = "OUTPUT";
-    static boolean moveDone = false;
-    private static int i = 0;
+    static String coordinatesInput = "", coordinatesOutput = "";
+    static boolean myturn = false;
+    private static int counter = 0;
     static boolean connected = false;
+    Captain player = new Captain();
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(() -> new BattleShipGame());
     }
 
-    private BattleShipGame() {
+    private BattleShipGame()
+    {
         this.setTitle("Battleship Game");
         this.setSize(1100, 500);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -30,7 +33,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
         this.setResizable(false);
 
         JPanel panel = new JPanel();
-        Captain player = new Captain();
         player.initializeShips();
 
         Timer timer = new Timer(20, this);
@@ -65,11 +67,12 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 }
 
                 //establish network connection
-                serverOrClientDecision(JOptionPane.YES_OPTION, player);
+                boolean outcome = serverOrClientDecision(JOptionPane.YES_OPTION, player);
 
-                panel.remove(reset);
-                panel.remove(ready);
-
+                if(outcome) {
+                    panel.remove(reset);
+                    panel.remove(ready);
+                }
                 revalidate();
                 repaint();
             }
@@ -117,18 +120,37 @@ public class BattleShipGame extends JFrame implements ActionListener {
 
     @Override
     public void actionPerformed(ActionEvent e) {
+        if(!coordinatesInput.isEmpty() && !player.isMyTurn()){
+            String[] parts = coordinatesInput.split("\\."); //////////////////
+            logicPosX = Integer.parseInt(parts[0]);
+            logicPosY = Integer.parseInt(parts[1]);
+            if (player.getMyBoard()[logicPosX][logicPosY] == 1) {
+                player.getMyBoard()[logicPosX][logicPosY] = 2;
+                isSunk(player.getMyBoard());
+            }
+            else if(player.getMyBoard()[logicPosX][logicPosY] == 0)
+                player.getMyBoard()[logicPosX][logicPosY] = -1;
+
+            coordinatesInput = "";
+            player.setMyTurn(true);
+        }
+
         repaint();
     }
 
-    public void serverOrClientDecision(int decision, Captain player) {
+    public boolean serverOrClientDecision(int decision, Captain player) {
 
         Object[] options = {"CREATE", "JOIN", "EXIT"};
         Object[] options2 = {"BACK", "TRY AGAIN", "EXIT"};
         if (decision == JOptionPane.YES_OPTION) {
+
             decision = JOptionPane.showOptionDialog(this, "Create game or join one?", "Battleship Game",
                     JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, null);
         }
 
+        //
+        if(decision == JOptionPane.CANCEL_OPTION)
+            return false;
 
         if (decision == JOptionPane.YES_OPTION) {
             //create server
@@ -167,6 +189,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 serverOrClientDecision(decision, player);
             }
         }
+        return true;
     }
 
     public void customMouseDragged(Captain player, MouseEvent e) {
@@ -180,8 +203,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
 
     public void customMouseClicked(MouseEvent e, Captain player) {
         if (player.getReady() == 0) {
-            //ship is in bounds of BOARD after rotating
-            System.out.println("Opsie doopsie");
+            //ship is in bounds of the BOARD after rotating
             player.getShips().stream()
                     .filter(ship -> ship.getBounds().contains(e.getPoint()))
                     .filter(ship -> (logicPosX < 11 && logicPosY + ship.getSize() < 11 && ship.isHorizontal())
@@ -189,15 +211,12 @@ public class BattleShipGame extends JFrame implements ActionListener {
                     .forEach(ship -> ship.setHorizontal(!ship.isHorizontal()));
 
             //ship don't overlap space of other ship, if does revert rotation to previous state
-
-
             if(newShip.isPresent()) {
                 player.getShips().stream()
                         .filter(ship -> ship.getId() != newShip.get().getId())
                         .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
                         .forEach(ship -> {
                             newShip.get().setHorizontal(!newShip.get().isHorizontal());
-                            System.out.println(newShip.get().getSize());
                         });
             }
 
@@ -214,32 +233,37 @@ public class BattleShipGame extends JFrame implements ActionListener {
                     .findAny();
 
             newShip.ifPresent(newShip -> start = newShip.getCoordinates());
-        } else if (player.getReady() == 2) {
-            System.out.println(e.getPoint().toString());
-            coordinatesOutput = Integer.toString(e.getX()) + "." + Integer.toString(e.getY());
-            //moveDone = true;
+        } else if (player.getReady() == 2 && player.isMyTurn()) {
+            //System.out.println(e.getPoint().toString());
 
-            //clikam na plansze
-            //zamieniam na logiczne koordynaty
-            //wysylam koordynaty
-            //otrzymuje odpowiedz (rysuje)
-            //czekam na otrzymanie koordynatow (zmienna moja tura czy nie?)
-            //dostaje koordynaty
-            //sprawdzam (rysuje)
-            //wysylam odpowiedz (moja tura)
-            //RETURN
+            //-1 - uncovered (miss)
+            // 0 - covered (miss)
+            // 1 - covered (hit)
+            // 2 - uncovered (hit)
+            // 3 - uncovered (hit and sunk)
 
-            //VS
-            //wysylam na poczatku tablice logiczne (jade po kolei true albo false jako jedynki albo zera
-            //i zamieniam na logiczne  jakims loopie)
-            //clikam na plansze
-            //zmieniam na logiczne koordynaty
-            //wysylam koordynaty ( u siebie od razu to sprawdzam i rysuje) (koniec tury)
-            //dostaje koordynaty (rysuje) (moja tura)
+            // is shoot in bounds of the enemy BOARD
+            if ((e.getX() > 600 && e.getX() < 920) && (e.getY() > 50 && e.getY() < 370)){
+                logicPosX = (e.getX() - 600) / 32;
+                logicPosY = (e.getY() - 50) / 32;
 
+                if (player.getEnemyBoard()[logicPosX][logicPosY] == 1) { // if covered (hit)
+                    player.getEnemyBoard()[logicPosX][logicPosY] = 2;// set as uncovered (hit)
+                    //check if ship sunk
+                    isSunk(player.getEnemyBoard());
+                    coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
+                    player.setMyTurn(false);
+                    coordinatesOutput = "";
+                }
+                else if (player.getEnemyBoard()[logicPosX][logicPosY] == 0) { //if covered (miss)
+                    player.getEnemyBoard()[logicPosX][logicPosY] = -1; // set as uncovered (miss)
+                    coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
+                    player.setMyTurn(false);
+                    coordinatesOutput = "";
+                }
+            }
         }
     }
-
     public void customMouseReleased(Captain player) {
         if (player.getReady() == 0) {
             if (newShip.isPresent()) {
@@ -269,6 +293,83 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 }
             }
         }
+    }
+
+    private void isSunk(int[][] board) {
+
+        int struck = 0;
+        int notStruck = 0;
+        Point[] struckPositions = new Point[4];
+
+        //checking every direction for not struck poles in ship
+        for (int n = 0; n < 4; n++) {
+            if (logicPosY - n > 0){
+                if (board[logicPosX][logicPosY - n] == 2) {
+                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struck++;
+                }
+                else if(board[logicPosX][logicPosY - n] == 1)
+                    notStruck++;
+                else if(board[logicPosX][logicPosY - n] == 0)
+                    break;
+            }
+            else
+                break;
+        }
+        for (int s = 1; s < 4; s++) {
+            if (logicPosY + s  < 10){
+                if (board[logicPosX][logicPosY + s] == 2) {
+                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struck++;
+                }
+                else if(board[logicPosX][logicPosY + s] == 1)
+                    notStruck++;
+                else if(board[logicPosX][logicPosY + s] == 0)
+                    break;
+            }
+            else
+                break;
+        }
+        for (int e = 1; e < 4; e++) {
+            if (logicPosX + e < 10){
+                if (board[logicPosX + e][logicPosY] == 2) {
+                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struck++;
+                }
+                else if(board[logicPosX + e][logicPosY] == 1)
+                    notStruck++;
+                else if(board[logicPosX + e][logicPosY] == 0)
+                    break;
+            }
+            else
+                break;
+        }
+        for (int w = 1; w < 4; w++) {
+            if (logicPosX - w > 0){
+                if (board[logicPosX - w][logicPosY] == 2) {
+                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struck++;
+                }
+                else if(board[logicPosX - w][logicPosY] == 1)
+                    notStruck++;
+                else if(board[logicPosX - w][logicPosY] == 0)
+                    break;
+            }
+            else
+                break;
+        }
+
+        // if sunk change it in logical table
+        if (notStruck == 0){
+            for (Point p : struckPositions){
+                board[p.x][p.y] = 3;
+                //return int = struck
+
+            }
+        }
+        //else return -1; - in future to display sunk ships as small squares next to tables
+
+
     }
 }
 
