@@ -129,20 +129,21 @@ public class DrawBoardAndShips extends JComponent {
                     g.drawLine(x*32 + 150, y*32 + 50, x*32 + 150 + 32, y*32 + 50 + 32);
                     g.drawLine(x*32 + 150 + 32, y*32 + 50, x*32 + 150, y*32 + 50 + 32);
                 }
-                else if(player.getMyBoard()[x][y] == 3) {//sunk
+                if(player.getMyBoard()[x][y] == 3) {//sunk
                     g.drawRect(x*32 + 150, y*32 + 50, 32, 32);
                 }
 
                 //Enemy Board
                 if(player.getEnemyBoard()[x][y] == -1) { // miss
-                    System.out.println(player.getEnemyBoard()[x][y] + "  " + x + "-" + y);//////////////
+                    ///System.out.println(player.getEnemyBoard()[x][y] + "  " + x + "-" + y);//////////////
                     g.fillOval(x * 32 + 600 + 14, y * 32 + 50 + 14, 4, 4);
                 }
                 else if(player.getEnemyBoard()[x][y] == 2 || player.getEnemyBoard()[x][y] == 3) { // hit
                     g.drawLine(x*32 + 600, y*32 + 50, x*32 + 600 + 32, y*32 + 50 + 32);
                     g.drawLine(x*32 + 600 + 32, y*32 + 50, x*32 + 600, y*32 + 50 + 32);
                 }
-                else if(player.getEnemyBoard()[x][y] == 3) {//sunk
+                if(player.getEnemyBoard()[x][y] == 3) {//sunk
+                    //System.out.println("DrawBoardAndShips-PaintMoves_Sunk");
                     g.drawRect(x*32 + 600, y*32 + 50, 32, 32);
                 }
             }

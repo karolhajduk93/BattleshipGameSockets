@@ -4,12 +4,13 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Optional;
 
 public class BattleShipGame extends JFrame implements ActionListener {
 
 
-    //this 268, Draw 112 /////////////////////////////////////
+    //Enemy moves show after your move - WRONG
     private Optional<Ship> newShip;
     private int logicPosX;
     private int logicPosY;
@@ -119,8 +120,8 @@ public class BattleShipGame extends JFrame implements ActionListener {
     }
 
     @Override
-    public void actionPerformed(ActionEvent e) {
-        if(!coordinatesInput.isEmpty() && !player.isMyTurn()){
+    synchronized public void actionPerformed(ActionEvent e) {
+        if(!coordinatesInput.isEmpty()){
             String[] parts = coordinatesInput.split("\\."); //////////////////
             logicPosX = Integer.parseInt(parts[0]);
             logicPosY = Integer.parseInt(parts[1]);
@@ -131,8 +132,9 @@ public class BattleShipGame extends JFrame implements ActionListener {
             else if(player.getMyBoard()[logicPosX][logicPosY] == 0)
                 player.getMyBoard()[logicPosX][logicPosY] = -1;
 
-            coordinatesInput = "";
-            player.setMyTurn(true);
+            //
+            /*coordinatesInput = "";
+            player.setMyTurn(true);*/
         }
 
         repaint();
@@ -223,7 +225,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
         }
     }
 
-    public void customMousePressed(MouseEvent e, Captain player) {
+    synchronized public void customMousePressed(MouseEvent e, Captain player) {
         if (player.getReady() == 0) {
             logicPosX = logicPosY = -1;
 
@@ -252,14 +254,16 @@ public class BattleShipGame extends JFrame implements ActionListener {
                     //check if ship sunk
                     isSunk(player.getEnemyBoard());
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
-                    player.setMyTurn(false);
-                    coordinatesOutput = "";
+                    //
+                    /*coordinatesOutput = "";
+                    player.setMyTurn(false);*/
                 }
                 else if (player.getEnemyBoard()[logicPosX][logicPosY] == 0) { //if covered (miss)
                     player.getEnemyBoard()[logicPosX][logicPosY] = -1; // set as uncovered (miss)
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
-                    player.setMyTurn(false);
-                    coordinatesOutput = "";
+                    //
+                    /*coordinatesOutput = "";
+                    player.setMyTurn(false);*/
                 }
             }
         }
@@ -295,17 +299,18 @@ public class BattleShipGame extends JFrame implements ActionListener {
         }
     }
 
-    private void isSunk(int[][] board) {
+    synchronized private void isSunk(int[][] board) {
 
+        //add to struckPosition
         int struck = 0;
         int notStruck = 0;
-        Point[] struckPositions = new Point[4];
+        ArrayList<Point> struckPositions = new ArrayList<>();
 
         //checking every direction for not struck poles in ship
         for (int n = 0; n < 4; n++) {
-            if (logicPosY - n > 0){
+            if (logicPosY - n >= 0){
                 if (board[logicPosX][logicPosY - n] == 2) {
-                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struckPositions.add(new Point(logicPosX, logicPosY - n));
                     struck++;
                 }
                 else if(board[logicPosX][logicPosY - n] == 1)
@@ -319,7 +324,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
         for (int s = 1; s < 4; s++) {
             if (logicPosY + s  < 10){
                 if (board[logicPosX][logicPosY + s] == 2) {
-                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struckPositions.add(new Point(logicPosX, logicPosY + s));
                     struck++;
                 }
                 else if(board[logicPosX][logicPosY + s] == 1)
@@ -333,7 +338,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
         for (int e = 1; e < 4; e++) {
             if (logicPosX + e < 10){
                 if (board[logicPosX + e][logicPosY] == 2) {
-                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struckPositions.add(new Point(logicPosX + e, logicPosY));
                     struck++;
                 }
                 else if(board[logicPosX + e][logicPosY] == 1)
@@ -345,9 +350,9 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 break;
         }
         for (int w = 1; w < 4; w++) {
-            if (logicPosX - w > 0){
+            if (logicPosX - w >= 0){
                 if (board[logicPosX - w][logicPosY] == 2) {
-                    struckPositions[struck] = new Point(logicPosX, logicPosY);
+                    struckPositions.add(new Point(logicPosX - w, logicPosY));
                     struck++;
                 }
                 else if(board[logicPosX - w][logicPosY] == 1)
@@ -362,9 +367,9 @@ public class BattleShipGame extends JFrame implements ActionListener {
         // if sunk change it in logical table
         if (notStruck == 0){
             for (Point p : struckPositions){
+                //System.out.println("x= " + p.x + " y= " + p.y);
                 board[p.x][p.y] = 3;
                 //return int = struck
-
             }
         }
         //else return -1; - in future to display sunk ships as small squares next to tables

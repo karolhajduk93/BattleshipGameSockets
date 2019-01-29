@@ -13,44 +13,37 @@ class Server extends Thread {
 
     String sendMessage = "", message1 = "", receivedMessage = "";
 
-    public Server(Captain player)  {
+    public Server(Captain player) throws IOException {
 
         System.out.println("SERVER");
 
         int asd = 0;
 
         player.setReady(1);
-        try {
-            serverSocket = new ServerSocket(6666);
-            socket = serverSocket.accept();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        serverSocket = new ServerSocket(6666);
+        socket = serverSocket.accept();
+
 
         player.setReady(2);
-        try {
-            dataInputStream = new DataInputStream(socket.getInputStream());
-            dataOutputStream = new DataOutputStream(socket.getOutputStream());
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataInputStream = new DataInputStream(socket.getInputStream());
+        dataOutputStream = new DataOutputStream(socket.getOutputStream());
+
 
         //send logic table at the beginning of the game
-        for(int i1 = 0; i1 < player.getMyBoard().length; i1++){
-            for (int j = 0; j < player.getMyBoard()[i1].length; j++){
-                if(player.getMyBoard()[j][i1] == 1) /////////////////////
+        for (int i1 = 0; i1 < player.getMyBoard().length; i1++) {
+            for (int j = 0; j < player.getMyBoard()[i1].length; j++) {
+                if (player.getMyBoard()[j][i1] == 1) /////////////////////
                     sendMessage += "1";
                 else
                     sendMessage += "0";
             }
         }
-        try {
-            dataOutputStream.writeUTF(sendMessage);
-            receivedMessage = dataInputStream.readUTF();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+
+        dataOutputStream.writeUTF(sendMessage);
+        dataOutputStream.flush();
+        receivedMessage = dataInputStream.readUTF();
+
         sendMessage = "";
         /*System.out.println("Sever get from Client: " + dataInputStream.readUTF());
         System.out.println("Server send: " + start);*/
@@ -61,57 +54,46 @@ class Server extends Thread {
         receivedMessage = "";
         player.setMyTurn(true);
 
-        while(!message1.equals("WIN") || !message1.equals("LOOSE")){
-
-            try {
-                dataOutputStream.writeUTF(BattleShipGame.coordinatesOutput);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            BattleShipGame.coordinatesOutput = "";
+        while (!message1.equals("WIN") || !message1.equals("LOOSE")) {
 
 
 
-            if(!player.isMyTurn()) {
-                try {
-                    receivedMessage = dataInputStream.readUTF();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
+            /*dataOutputStream.writeUTF(BattleShipGame.coordinatesOutput);
+
+            BattleShipGame.coordinatesOutput = "";*/
 
 
-                if(!receivedMessage.isEmpty()) {
+            if (!player.isMyTurn()) {
+
+                receivedMessage = dataInputStream.readUTF();
+
+
+                if (!receivedMessage.isEmpty()) {
                     BattleShipGame.coordinatesInput = receivedMessage;
                     receivedMessage = "";
-                    //player.setMyTurn(true);
+                    player.setMyTurn(true);
                 }
             } else {
                 sendMessage = BattleShipGame.coordinatesOutput;
 
 
-                if(!sendMessage.isEmpty()) {
-                    try {
-                        dataOutputStream.writeUTF(sendMessage);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+                if (!sendMessage.isEmpty()) {
+
+                    dataOutputStream.writeUTF(sendMessage);
+
                     sendMessage = "";
-                    //player.setMyTurn(false);
+                    BattleShipGame.coordinatesOutput = "";
+                    player.setMyTurn(false);
                 }
             }
-
-
 
 
             //dataOutputStream.flush();
         }
 
-        try {
-            dataInputStream.close();
-            socket.close();
-            serverSocket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        dataInputStream.close();
+        socket.close();
+        serverSocket.close();
+
     }
 }
