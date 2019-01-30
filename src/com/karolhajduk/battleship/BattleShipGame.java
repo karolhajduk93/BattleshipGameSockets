@@ -10,15 +10,16 @@ import java.util.Optional;
 public class BattleShipGame extends JFrame implements ActionListener {
 
 
-    //Enemy moves show after your move - WRONG
+    //Win condition & Disconnection of one player
     private Optional<Ship> newShip;
     private int logicPosX;
     private int logicPosY;
     private Coordinates start;
     static String coordinatesInput = "", coordinatesOutput = "";
-    static boolean myturn = false;
-    private static int counter = 0;
     static boolean connected = false;
+    static int gameResult = 0;
+    JButton reset;
+    JButton ready;
     Captain player = new Captain();
 
     public static void main(String[] args) {
@@ -41,24 +42,16 @@ public class BattleShipGame extends JFrame implements ActionListener {
         DrawBoardAndShips boardAndShips = new DrawBoardAndShips(player);
 
         timer.start();
-        //create player
-        //set your ships (one map & ships to drag from place to place)
-        //when READY button clicked and all ships are on board ->
-        //->search for player (Connection - sockets)
-        //draw 2 maps (one with ships, one to shoot)
-        //receive  coordinates (hit or miss - draw changes to 1 map) - win condition checker (send info to another player about shoot result)
-        //send coordinates
 
-        JButton reset = new JButton("RESET");
+        reset = new JButton("RESET");
         reset.addActionListener(e -> {
             //set to default position of ships
             player.resetPositions();
             player.getShips().forEach(ship -> ship.setShipOnBoard(false));
         });
-        JButton ready = new JButton("READY!");
+        ready = new JButton("READY!");
         ready.addActionListener((ActionEvent e) -> { //set logic when button ready pressed
             //check if all ships are on board
-            //set ready = true
 
             if (player.getShips().stream().filter(Ship::isShipOnBoard).count() == 10 && e.getSource() == ready) {
 
@@ -71,8 +64,10 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 boolean outcome = serverOrClientDecision(JOptionPane.YES_OPTION, player);
 
                 if(outcome) {
-                    panel.remove(reset);
-                    panel.remove(ready);
+                   reset.setVisible(false);
+                   ready.setVisible(false);
+                   reset.setEnabled(false);
+                   ready.setEnabled(false);
                 }
                 revalidate();
                 repaint();
@@ -122,77 +117,31 @@ public class BattleShipGame extends JFrame implements ActionListener {
     @Override
     synchronized public void actionPerformed(ActionEvent e) {
         if(!coordinatesInput.isEmpty()){
-            String[] parts = coordinatesInput.split("\\."); //////////////////
+            String[] parts = coordinatesInput.split("\\.");
             logicPosX = Integer.parseInt(parts[0]);
             logicPosY = Integer.parseInt(parts[1]);
             if (player.getMyBoard()[logicPosX][logicPosY] == 1) {
                 player.getMyBoard()[logicPosX][logicPosY] = 2;
+                player.setHitsTaken(player.getHitsTaken() + 1);
                 isSunk(player.getMyBoard());
+                if(player.getHitsTaken() == 20)
+                    gameResult = 2; //M/N
             }
             else if(player.getMyBoard()[logicPosX][logicPosY] == 0)
                 player.getMyBoard()[logicPosX][logicPosY] = -1;
-
-            //
-            /*coordinatesInput = "";
-            player.setMyTurn(true);*/
         }
+
+        if(gameResult != 0) { //MAGIC NUMBER - REMOVE LATER
+            repaint();
+            tryAgain(gameResult);
+            gameResult = 0;
+        }
+
 
         repaint();
     }
 
-    public boolean serverOrClientDecision(int decision, Captain player) {
 
-        Object[] options = {"CREATE", "JOIN", "EXIT"};
-        Object[] options2 = {"BACK", "TRY AGAIN", "EXIT"};
-        if (decision == JOptionPane.YES_OPTION) {
-
-            decision = JOptionPane.showOptionDialog(this, "Create game or join one?", "Battleship Game",
-                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, null);
-        }
-
-        //
-        if(decision == JOptionPane.CANCEL_OPTION)
-            return false;
-
-        if (decision == JOptionPane.YES_OPTION) {
-            //create server
-
-            SwingWorker<Void, Void> worker = new SwingWorker<>() {
-                @Override
-                protected Void doInBackground() throws Exception {
-                    Server server = new Server(player);
-                    return null;
-                }
-            };
-            worker.execute();
-
-        } else if (decision == JOptionPane.NO_OPTION) {
-            //getting IP
-            String serversIP = JOptionPane.showInputDialog("Type server's IP");
-
-            //creating client
-            SwingWorker<Void, Boolean> worker1 = new SwingWorker<>() {
-                @Override
-                protected Void doInBackground() throws IOException {
-                    Client client = new Client(serversIP, player);
-                    return null;
-                }
-            };
-            worker1.execute();
-
-            while (!worker1.isDone()) {
-                if (connected == true)
-                    break;
-            }
-
-            if (!connected) {
-                decision = JOptionPane.showOptionDialog(this, "Host not responding", "Join Game",
-                        JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options2, null);
-                serverOrClientDecision(decision, player);
-            }
-        }
-        return true;
-    }
 
     public void customMouseDragged(Captain player, MouseEvent e) {
         if (player.getReady() == 0) {
@@ -253,6 +202,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
                     player.getEnemyBoard()[logicPosX][logicPosY] = 2;// set as uncovered (hit)
                     //check if ship sunk
                     isSunk(player.getEnemyBoard());
+                    player.setHitsGiven(player.getHitsGiven() + 1);
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
                     //
                     /*coordinatesOutput = "";
@@ -261,9 +211,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 else if (player.getEnemyBoard()[logicPosX][logicPosY] == 0) { //if covered (miss)
                     player.getEnemyBoard()[logicPosX][logicPosY] = -1; // set as uncovered (miss)
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
-                    //
-                    /*coordinatesOutput = "";
-                    player.setMyTurn(false);*/
+
                 }
             }
         }
@@ -297,6 +245,109 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 }
             }
         }
+    }
+
+    public boolean serverOrClientDecision(int decision, Captain player) {
+
+        Object[] options = {"CREATE", "JOIN", "EXIT"};
+        Object[] options2 = {"BACK", "TRY AGAIN", "EXIT"};
+        if (decision == JOptionPane.YES_OPTION) {
+
+            decision = JOptionPane.showOptionDialog(this, "Create game or join one?", "Battleship Game",
+                    JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE, null, options, null);
+        }
+
+        //
+        if(decision == JOptionPane.CANCEL_OPTION)
+            return false;
+
+        if (decision == JOptionPane.YES_OPTION) {
+            //create server
+
+            SwingWorker<Void, Void> worker = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    try {
+                        Server server = new Server(player);
+                    }
+                    catch (IOException e){
+                        tryAgain(3);
+                    }
+                    return null;
+                }
+            };
+            worker.execute();
+
+        } else if (decision == JOptionPane.NO_OPTION) {
+            //getting IP
+            String serversIP = JOptionPane.showInputDialog("Type server's IP");
+
+            //creating client
+            SwingWorker<Void, Boolean> worker1 = new SwingWorker<>() {
+                @Override
+                protected Void doInBackground() throws IOException {
+                    try {
+                        Client client = new Client(serversIP, player);
+                    }
+                    catch (IOException e){
+                        tryAgain(3);
+                    }
+                    return null;
+                }
+            };
+            worker1.execute();
+
+            while (!worker1.isDone()) {
+                if (connected == true)
+                    break;
+            }
+
+            if (!connected) {
+                decision = JOptionPane.showOptionDialog(this, "Host not responding", "Join Game",
+                        JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options2, null);
+                serverOrClientDecision(decision, player);
+            }
+        }
+        return true;
+    }
+
+    public void tryAgain(int gameResult){
+
+        //1 - win
+        //2 - lose
+
+        int decision = -1;
+
+        if(gameResult == 1) {
+            decision = JOptionPane.showConfirmDialog(this, "Play again?", "WIN!!!",
+                    JOptionPane.YES_NO_OPTION);
+        }
+        else if (gameResult == 2){
+            decision = JOptionPane.showConfirmDialog(this, "Play again?", "LOOSE!!!",
+                    JOptionPane.YES_NO_OPTION);
+        }
+        else if(gameResult == 3)
+            decision = JOptionPane.showConfirmDialog(this, "Start new game?", "Opponent disconnected",
+                    JOptionPane.YES_NO_OPTION);
+
+        if(decision == JOptionPane.YES_OPTION){
+            player.resetPositions();
+            player.setReady(0);
+            player.getShips().forEach(ship -> ship.setShipOnBoard(false));
+            player.setHitsTaken(0);
+            player.setHitsGiven(0);
+
+            reset.setVisible(true);
+            ready.setVisible(true);
+            reset.setEnabled(true);
+            ready.setEnabled(true);
+
+            coordinatesInput = "";
+        }
+        else if (decision == JOptionPane.NO_OPTION){
+            System.exit(0);
+        }
+
     }
 
     synchronized private void isSunk(int[][] board) {

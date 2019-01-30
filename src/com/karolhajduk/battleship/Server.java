@@ -11,7 +11,7 @@ class Server extends Thread {
     DataInputStream dataInputStream;
     DataOutputStream dataOutputStream;
 
-    String sendMessage = "", message1 = "", receivedMessage = "";
+    String sendMessage = "", receivedMessage = "";
 
     public Server(Captain player) throws IOException {
 
@@ -45,8 +45,6 @@ class Server extends Thread {
         receivedMessage = dataInputStream.readUTF();
 
         sendMessage = "";
-        /*System.out.println("Sever get from Client: " + dataInputStream.readUTF());
-        System.out.println("Server send: " + start);*/
 
         //receive String and convert it to enemy logic table
 
@@ -54,14 +52,7 @@ class Server extends Thread {
         receivedMessage = "";
         player.setMyTurn(true);
 
-        while (!message1.equals("WIN") || !message1.equals("LOOSE")) {
-
-
-
-            /*dataOutputStream.writeUTF(BattleShipGame.coordinatesOutput);
-
-            BattleShipGame.coordinatesOutput = "";*/
-
+        while (true) {
 
             if (!player.isMyTurn()) {
 
@@ -84,11 +75,18 @@ class Server extends Thread {
                     sendMessage = "";
                     BattleShipGame.coordinatesOutput = "";
                     player.setMyTurn(false);
+
+
+                    if(player.getHitsGiven() == 20) {
+                        BattleShipGame.gameResult = 1;
+                        break;
+                    }
                 }
             }
 
 
-            //dataOutputStream.flush();
+
+            dataOutputStream.flush();
         }
 
         dataInputStream.close();

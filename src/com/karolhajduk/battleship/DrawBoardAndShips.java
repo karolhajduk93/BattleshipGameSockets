@@ -34,6 +34,7 @@ public class DrawBoardAndShips extends JComponent {
 
     public void paintStart(Graphics2D g){
         //320x320 [10x10] |  (150,50)-(x = 470, y = 370)
+
         g.drawString("A        B        C        D        E        F        G        H        I        J", 165, 45);
         for (int x = 150; x < 470; x = x + 32) {
             if (((x - 150) / 32) + 1 != 10)
@@ -97,7 +98,7 @@ public class DrawBoardAndShips extends JComponent {
 
         g.setStroke(new BasicStroke(1));
 
-        //draw enemy table
+
         g.drawString("A        B        C        D        E        F        G        H        I        J", 615, 45);
         for (int x = 600; x < 920; x = x + 32) {
             if (((x - 600) / 32) + 1 != 10)
@@ -116,11 +117,22 @@ public class DrawBoardAndShips extends JComponent {
         //(150, 50)-(470, 370) - MY BOARD
         //(600, 50)-(920, 370) - ENEMY BOARD
 
+        g.setFont(new Font("Serif", Font.BOLD, 20));
+        if(player.isMyTurn()) {
+            g.setColor(Color.BLUE);
+            g.drawString("Your turn", 500, 420);
+        }
+        else {
+            g.setColor(Color.RED);
+            g.drawString("Opponent's turn", 470, 420);
+        }
+
         g.setStroke(new BasicStroke(2));
         g.setColor(Color.RED);
 
         for (int x = 0; x < 10; x++) {
             for (int y = 0; y < 10; y++) {
+
                 //My Board
                 if(player.getMyBoard()[x][y] == -1) { // miss
                     g.fillOval(x * 32 + 150 + 14, y * 32 + 50 + 14, 4, 4);
@@ -135,15 +147,13 @@ public class DrawBoardAndShips extends JComponent {
 
                 //Enemy Board
                 if(player.getEnemyBoard()[x][y] == -1) { // miss
-                    ///System.out.println(player.getEnemyBoard()[x][y] + "  " + x + "-" + y);//////////////
                     g.fillOval(x * 32 + 600 + 14, y * 32 + 50 + 14, 4, 4);
                 }
                 else if(player.getEnemyBoard()[x][y] == 2 || player.getEnemyBoard()[x][y] == 3) { // hit
                     g.drawLine(x*32 + 600, y*32 + 50, x*32 + 600 + 32, y*32 + 50 + 32);
                     g.drawLine(x*32 + 600 + 32, y*32 + 50, x*32 + 600, y*32 + 50 + 32);
                 }
-                if(player.getEnemyBoard()[x][y] == 3) {//sunk
-                    //System.out.println("DrawBoardAndShips-PaintMoves_Sunk");
+                if(player.getEnemyBoard()[x][y] == 3) { //sunk
                     g.drawRect(x*32 + 600, y*32 + 50, 32, 32);
                 }
             }

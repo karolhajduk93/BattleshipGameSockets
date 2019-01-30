@@ -19,8 +19,27 @@ public class Captain {
 
     private int[][] myBoard = new int[10][10];
     private int[][] enemyBoard = new int[10][10];
-    private boolean winLoseState = false;
+    private int hitsTaken = 0;
+    private int hitsGiven = 0;
     private int ready = 0;
+    private boolean myTurn = false;
+
+
+    public int getHitsTaken() {
+        return hitsTaken;
+    }
+
+    public void setHitsTaken(int hitsTaken) {
+        this.hitsTaken = hitsTaken;
+    }
+
+    public int getHitsGiven() {
+        return hitsGiven;
+    }
+
+    public void setHitsGiven(int hitsGiven) {
+        this.hitsGiven = hitsGiven;
+    }
 
     public boolean isMyTurn() {
         return myTurn;
@@ -29,8 +48,6 @@ public class Captain {
     public void setMyTurn(boolean myTurn) {
         this.myTurn = myTurn;
     }
-
-    private boolean myTurn = false; ////////////////////////////////
 
     public int getReady() {
         return ready;

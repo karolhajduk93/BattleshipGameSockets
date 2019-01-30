@@ -10,7 +10,7 @@ public class Client {
     DataOutputStream dataOutputStream;
     BufferedReader bufferedReader;
 
-    String sendMessage = "", message1 = "", receivedMessage = "";
+    String sendMessage = "", receivedMessage = "";
 
     public Client(String host, Captain player) throws IOException {
 
@@ -52,7 +52,7 @@ public class Client {
         receivedMessage = "";
         player.setMyTurn(false);
 
-        while (!message1.equals("WIN") || !message1.equals("LOOSE")) {
+        while (true) {
 
             if (!player.isMyTurn()) {
 
@@ -75,8 +75,15 @@ public class Client {
                     sendMessage = "";
                     BattleShipGame.coordinatesOutput = "";
                     player.setMyTurn(false);
+
+                    if(player.getHitsGiven() == 20) {
+                        BattleShipGame.gameResult = 1;
+                        break;
+                    }
                 }
             }
+
+
 
 
             dataOutputStream.flush();
