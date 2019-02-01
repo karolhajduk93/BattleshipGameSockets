@@ -15,16 +15,12 @@ class Server extends Thread {
 
     public Server(Captain player) throws IOException {
 
-        System.out.println("SERVER");
-
-        int asd = 0;
-
-        player.setReady(1);
+        player.setReady(GameState.WAITING);
         serverSocket = new ServerSocket(6666);
         socket = serverSocket.accept();
 
 
-        player.setReady(2);
+        player.setReady(GameState.PLAYING);
 
         dataInputStream = new DataInputStream(socket.getInputStream());
         dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -33,7 +29,7 @@ class Server extends Thread {
         //send logic table at the beginning of the game
         for (int i1 = 0; i1 < player.getMyBoard().length; i1++) {
             for (int j = 0; j < player.getMyBoard()[i1].length; j++) {
-                if (player.getMyBoard()[j][i1] == 1) /////////////////////
+                if (player.getMyBoard()[j][i1] == HitOrMiss.COVERED_HIT)
                     sendMessage += "1";
                 else
                     sendMessage += "0";
@@ -42,22 +38,18 @@ class Server extends Thread {
 
         dataOutputStream.writeUTF(sendMessage);
         dataOutputStream.flush();
-        receivedMessage = dataInputStream.readUTF();
-
         sendMessage = "";
 
         //receive String and convert it to enemy logic table
-
+        receivedMessage = dataInputStream.readUTF();
         player.setEnemyBoard(receivedMessage);
         receivedMessage = "";
+
         player.setMyTurn(true);
 
         while (true) {
-
             if (!player.isMyTurn()) {
-
                 receivedMessage = dataInputStream.readUTF();
-
 
                 if (!receivedMessage.isEmpty()) {
                     BattleShipGame.coordinatesInput = receivedMessage;
@@ -67,31 +59,23 @@ class Server extends Thread {
             } else {
                 sendMessage = BattleShipGame.coordinatesOutput;
 
-
                 if (!sendMessage.isEmpty()) {
-
                     dataOutputStream.writeUTF(sendMessage);
 
                     sendMessage = "";
                     BattleShipGame.coordinatesOutput = "";
                     player.setMyTurn(false);
 
-
-                    if(player.getHitsGiven() == 20) {
-                        BattleShipGame.gameResult = 1;
+                    if(player.getHitsGiven() == Captain.MAX_NUMBER_OF_HITS) {
+                        BattleShipGame.gameResult = GameResult.WIN;
                         break;
                     }
                 }
             }
-
-
-
             dataOutputStream.flush();
         }
-
         dataInputStream.close();
         socket.close();
         serverSocket.close();
-
     }
 }

@@ -10,14 +10,22 @@ import java.util.Optional;
 public class BattleShipGame extends JFrame implements ActionListener {
 
 
-    //Win condition & Disconnection of one player
+    //Display ship count (graphic form) & removing magic numbers
+    static final int MY_BOARD_START_POSITION_X = 150;
+    static final int MY_BOARD_END_POSITION_X = 470;
+    static final int ENEMY_BOARD_START_POSITION_X = 600;
+    static final int ENEMY_BOARD_END_POSITION_X = 920;
+    static final int BOTH_BOARD_START_POSITION_Y = 50;
+    static final int BOTH_BOARD_END_POSITION_Y = 370;
+    static final int DEFAULT_LOGICAL_TABLE_SIZE = 10;
+
     private Optional<Ship> newShip;
     private int logicPosX;
     private int logicPosY;
     private Coordinates start;
     static String coordinatesInput = "", coordinatesOutput = "";
     static boolean connected = false;
-    static int gameResult = 0;
+    static GameResult gameResult = GameResult.PENDING;
     JButton reset;
     JButton ready;
     Captain player = new Captain();
@@ -52,9 +60,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
         ready = new JButton("READY!");
         ready.addActionListener((ActionEvent e) -> { //set logic when button ready pressed
             //check if all ships are on board
-
-            if (player.getShips().stream().filter(Ship::isShipOnBoard).count() == 10 && e.getSource() == ready) {
-
+            if (player.getShips().stream().filter(Ship::isShipOnBoard).count() == player.getShips().size() && e.getSource() == ready) {
                 //set logic
                 for (Ship ship : player.getShips()) {
                     player.setMyBoard(ship);
@@ -77,7 +83,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
         panel.add(ready);
         this.add(panel, BorderLayout.SOUTH);
         this.add(boardAndShips, BorderLayout.CENTER);
-
 
         boardAndShips.addMouseMotionListener(new MouseMotionAdapter() {
             @Override
@@ -120,96 +125,86 @@ public class BattleShipGame extends JFrame implements ActionListener {
             String[] parts = coordinatesInput.split("\\.");
             logicPosX = Integer.parseInt(parts[0]);
             logicPosY = Integer.parseInt(parts[1]);
-            if (player.getMyBoard()[logicPosX][logicPosY] == 1) {
-                player.getMyBoard()[logicPosX][logicPosY] = 2;
+
+            if (player.getMyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_HIT) {
+                player.getMyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_HIT;
                 player.setHitsTaken(player.getHitsTaken() + 1);
                 isSunk(player.getMyBoard());
-                if(player.getHitsTaken() == 20)
-                    gameResult = 2; //M/N
-            }
-            else if(player.getMyBoard()[logicPosX][logicPosY] == 0)
-                player.getMyBoard()[logicPosX][logicPosY] = -1;
-        }
 
-        if(gameResult != 0) { //MAGIC NUMBER - REMOVE LATER
+                if(player.getHitsTaken() == Captain.MAX_NUMBER_OF_HITS)
+                    gameResult = GameResult.LOOSE;
+            }
+            else if(player.getMyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_MISS)
+                player.getMyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_MISS;
+        }
+        if(!gameResult.equals(GameResult.PENDING)) {
             repaint();
             tryAgain(gameResult);
-            gameResult = 0;
+            gameResult = GameResult.PENDING;
         }
-
-
         repaint();
     }
 
 
 
     public void customMouseDragged(Captain player, MouseEvent e) {
-        if (player.getReady() == 0) {
+        if (player.getReady().equals(GameState.PREPARE)) {
             newShip.filter(Ship::isHorizontal)
-                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - ship.getSize() * 16, e.getY() - 16)));
+                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - ship.getSize() * (Captain.DEFAULT_GRID_SIZE/2), e.getY() - (Captain.DEFAULT_GRID_SIZE/2))));
             newShip.filter(ship -> !ship.isHorizontal())
-                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - 16, e.getY() - ship.getSize() * 16)));
+                    .ifPresent(ship -> ship.setCoordinates(new Coordinates(e.getX() - (Captain.DEFAULT_GRID_SIZE/2), e.getY() - ship.getSize() * (Captain.DEFAULT_GRID_SIZE/2))));
         }
     }
 
     public void customMouseClicked(MouseEvent e, Captain player) {
-        if (player.getReady() == 0) {
+        if (player.getReady().equals(GameState.PREPARE)) {
             //ship is in bounds of the BOARD after rotating
             player.getShips().stream()
-                    .filter(ship -> ship.getBounds().contains(e.getPoint()))
-                    .filter(ship -> (logicPosX < 11 && logicPosY + ship.getSize() < 11 && ship.isHorizontal())
-                            || (logicPosX + ship.getSize() < 11 && logicPosY < 11 && !ship.isHorizontal()))
+                    .filter(ship -> ship.getBounds(0).contains(e.getPoint()))
+                    .filter(ship -> (logicPosX < DEFAULT_LOGICAL_TABLE_SIZE && logicPosY + ship.getSize() - 1 < DEFAULT_LOGICAL_TABLE_SIZE && ship.isHorizontal())
+                            || (logicPosX + ship.getSize() - 1 < DEFAULT_LOGICAL_TABLE_SIZE && logicPosY < DEFAULT_LOGICAL_TABLE_SIZE && !ship.isHorizontal()))
                     .forEach(ship -> ship.setHorizontal(!ship.isHorizontal()));
 
             //ship don't overlap space of other ship, if does revert rotation to previous state
             if(newShip.isPresent()) {
                 player.getShips().stream()
                         .filter(ship -> ship.getId() != newShip.get().getId())
-                        .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
+                        .filter(ship -> ship.getBounds(Captain.DEFAULT_GRID_SIZE).intersects(newShip.get().getBounds(0)))
                         .forEach(ship -> {
                             newShip.get().setHorizontal(!newShip.get().isHorizontal());
                         });
             }
-
         }
     }
 
     synchronized public void customMousePressed(MouseEvent e, Captain player) {
-        if (player.getReady() == 0) {
+        if (player.getReady().equals(GameState.PREPARE)) {
             logicPosX = logicPosY = -1;
 
             //picking up ship
             newShip = player.getShips().stream().
-                    filter(ship -> ship.getBounds().contains(e.getPoint()))
+                    filter(ship -> ship.getBounds(0).contains(e.getPoint()))
                     .findAny();
 
             newShip.ifPresent(newShip -> start = newShip.getCoordinates());
-        } else if (player.getReady() == 2 && player.isMyTurn()) {
-            //System.out.println(e.getPoint().toString());
-
-            //-1 - uncovered (miss)
-            // 0 - covered (miss)
-            // 1 - covered (hit)
-            // 2 - uncovered (hit)
-            // 3 - uncovered (hit and sunk)
+        } else if (player.getReady().equals(GameState.PLAYING) && player.isMyTurn()) { ////////////////////////////////////////////////////////////////////////////////////
 
             // is shoot in bounds of the enemy BOARD
-            if ((e.getX() > 600 && e.getX() < 920) && (e.getY() > 50 && e.getY() < 370)){
-                logicPosX = (e.getX() - 600) / 32;
-                logicPosY = (e.getY() - 50) / 32;
+            if ((e.getX() > ENEMY_BOARD_START_POSITION_X && e.getX() < ENEMY_BOARD_END_POSITION_X)
+                    && (e.getY() > BOTH_BOARD_START_POSITION_Y && e.getY() < BOTH_BOARD_END_POSITION_Y)){
+                logicPosX = (e.getX() - ENEMY_BOARD_START_POSITION_X) / Captain.DEFAULT_GRID_SIZE;
+                logicPosY = (e.getY() - BOTH_BOARD_START_POSITION_Y) / Captain.DEFAULT_GRID_SIZE;
 
-                if (player.getEnemyBoard()[logicPosX][logicPosY] == 1) { // if covered (hit)
-                    player.getEnemyBoard()[logicPosX][logicPosY] = 2;// set as uncovered (hit)
+                if (player.getEnemyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_HIT) { // if covered (hit)
+                    player.getEnemyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_HIT;// set as uncovered (hit)
+
                     //check if ship sunk
                     isSunk(player.getEnemyBoard());
                     player.setHitsGiven(player.getHitsGiven() + 1);
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
-                    //
-                    /*coordinatesOutput = "";
-                    player.setMyTurn(false);*/
                 }
-                else if (player.getEnemyBoard()[logicPosX][logicPosY] == 0) { //if covered (miss)
-                    player.getEnemyBoard()[logicPosX][logicPosY] = -1; // set as uncovered (miss)
+                else if (player.getEnemyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_MISS) { //if covered (miss)
+                    player.getEnemyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_MISS; // set as uncovered (miss)
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
 
                 }
@@ -217,30 +212,31 @@ public class BattleShipGame extends JFrame implements ActionListener {
         }
     }
     public void customMouseReleased(Captain player) {
-        if (player.getReady() == 0) {
+        if (player.getReady().equals(GameState.PREPARE)) {
             if (newShip.isPresent()) {
-                logicPosX = (newShip.get().getCoordinates().getX() - 150) / 32;
-                logicPosY = (newShip.get().getCoordinates().getY() - 50) / 32;
+                logicPosX = (newShip.get().getCoordinates().getX() - MY_BOARD_START_POSITION_X) / Captain.DEFAULT_GRID_SIZE;
+                logicPosY = (newShip.get().getCoordinates().getY() - BOTH_BOARD_START_POSITION_Y) / Captain.DEFAULT_GRID_SIZE;
 
                 //ship placed on board
-                if (((logicPosX + newShip.get().getSize() < 11) && (logicPosY < 11) && newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)
-                        || ((logicPosX < 11) && (logicPosY + newShip.get().getSize() < 11) && !newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)) {
+                if (((logicPosX + newShip.get().getSize() - 1  < DEFAULT_LOGICAL_TABLE_SIZE) && (logicPosY < 10) && newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)
+                        || ((logicPosX < DEFAULT_LOGICAL_TABLE_SIZE) && (logicPosY + newShip.get().getSize() - 1 < DEFAULT_LOGICAL_TABLE_SIZE) && !newShip.get().isHorizontal() && logicPosX > -1 && logicPosY > -1)) {
+
                     //adjust to grid
-                    newShip.get().getCoordinates().setX(150 + logicPosX * 32);
-                    newShip.get().getCoordinates().setY(50 + logicPosY * 32);
+                    newShip.get().getCoordinates().setX(MY_BOARD_START_POSITION_X + logicPosX * Captain.DEFAULT_GRID_SIZE);
+                    newShip.get().getCoordinates().setY(BOTH_BOARD_START_POSITION_Y + logicPosY * Captain.DEFAULT_GRID_SIZE);
 
                     newShip.ifPresent(newShip -> newShip.setShipOnBoard(true));
 
-                    //ship don't overlap space of other ship, if does revert move
+                    //ship don't overlap space of other ship, if does - revert move
                     player.getShips().stream()
                             .filter(ship -> ship.getId() != newShip.get().getId())
-                            .filter(ship -> ship.getBigBounds().intersects(newShip.get().getBounds()))
+                            .filter(ship -> ship.getBounds(Captain.DEFAULT_GRID_SIZE).intersects(newShip.get().getBounds(0)))
                             .forEach(ship -> {
                                 newShip.get().setCoordinates(start);
                                 newShip.get().setShipOnBoard(false);
                             });
                 } else {
-                    newShip.get().setHorizontal(true);
+                    newShip.get().setHorizontal(newShip.get().isHorizontal());
                     newShip.get().setCoordinates(start);
                 }
             }
@@ -271,7 +267,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
                         Server server = new Server(player);
                     }
                     catch (IOException e){
-                        tryAgain(3);
+                        tryAgain(GameResult.DISCONNECTED);
                     }
                     return null;
                 }
@@ -290,7 +286,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
                         Client client = new Client(serversIP, player);
                     }
                     catch (IOException e){
-                        tryAgain(3);
+                        tryAgain(GameResult.DISCONNECTED);
                     }
                     return null;
                 }
@@ -311,28 +307,28 @@ public class BattleShipGame extends JFrame implements ActionListener {
         return true;
     }
 
-    public void tryAgain(int gameResult){
+    public void tryAgain(GameResult gameResult){
 
         //1 - win
         //2 - lose
 
         int decision = -1;
 
-        if(gameResult == 1) {
+        if(gameResult.equals(GameResult.WIN)) {
             decision = JOptionPane.showConfirmDialog(this, "Play again?", "WIN!!!",
                     JOptionPane.YES_NO_OPTION);
         }
-        else if (gameResult == 2){
+        else if (gameResult.equals(GameResult.LOOSE)){
             decision = JOptionPane.showConfirmDialog(this, "Play again?", "LOOSE!!!",
                     JOptionPane.YES_NO_OPTION);
         }
-        else if(gameResult == 3)
+        else if(gameResult.equals(GameResult.DISCONNECTED))
             decision = JOptionPane.showConfirmDialog(this, "Start new game?", "Opponent disconnected",
                     JOptionPane.YES_NO_OPTION);
 
         if(decision == JOptionPane.YES_OPTION){
             player.resetPositions();
-            player.setReady(0);
+            player.setReady(GameState.PREPARE);
             player.getShips().forEach(ship -> ship.setShipOnBoard(false));
             player.setHitsTaken(0);
             player.setHitsGiven(0);
@@ -350,7 +346,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
 
     }
 
-    synchronized private void isSunk(int[][] board) {
+    synchronized private void isSunk(HitOrMiss[][] board) {
 
         //add to struckPosition
         int struck = 0;
@@ -358,57 +354,57 @@ public class BattleShipGame extends JFrame implements ActionListener {
         ArrayList<Point> struckPositions = new ArrayList<>();
 
         //checking every direction for not struck poles in ship
-        for (int n = 0; n < 4; n++) {
+        for (int n = 0; n < Ship.MAX_SHIP_SIZE; n++) {
             if (logicPosY - n >= 0){
-                if (board[logicPosX][logicPosY - n] == 2) {
+                if (board[logicPosX][logicPosY - n] == HitOrMiss.UNCOVERED_HIT) {
                     struckPositions.add(new Point(logicPosX, logicPosY - n));
                     struck++;
                 }
-                else if(board[logicPosX][logicPosY - n] == 1)
+                else if(board[logicPosX][logicPosY - n] == HitOrMiss.COVERED_HIT)
                     notStruck++;
-                else if(board[logicPosX][logicPosY - n] == 0)
+                else if(board[logicPosX][logicPosY - n] == HitOrMiss.COVERED_MISS || board[logicPosX][logicPosY - n] == HitOrMiss.UNCOVERED_MISS)
                     break;
             }
             else
                 break;
         }
-        for (int s = 1; s < 4; s++) {
-            if (logicPosY + s  < 10){
-                if (board[logicPosX][logicPosY + s] == 2) {
+        for (int s = 1; s < Ship.MAX_SHIP_SIZE; s++) {
+            if (logicPosY + s  < DEFAULT_LOGICAL_TABLE_SIZE){
+                if (board[logicPosX][logicPosY + s] == HitOrMiss.UNCOVERED_HIT) {
                     struckPositions.add(new Point(logicPosX, logicPosY + s));
                     struck++;
                 }
-                else if(board[logicPosX][logicPosY + s] == 1)
+                else if(board[logicPosX][logicPosY + s] == HitOrMiss.COVERED_HIT)
                     notStruck++;
-                else if(board[logicPosX][logicPosY + s] == 0)
+                else if(board[logicPosX][logicPosY + s] == HitOrMiss.COVERED_MISS || board[logicPosX][logicPosY + s] == HitOrMiss.UNCOVERED_MISS)
                     break;
             }
             else
                 break;
         }
-        for (int e = 1; e < 4; e++) {
-            if (logicPosX + e < 10){
-                if (board[logicPosX + e][logicPosY] == 2) {
+        for (int e = 1; e < Ship.MAX_SHIP_SIZE; e++) {
+            if (logicPosX + e < DEFAULT_LOGICAL_TABLE_SIZE){
+                if (board[logicPosX + e][logicPosY] == HitOrMiss.UNCOVERED_HIT) {
                     struckPositions.add(new Point(logicPosX + e, logicPosY));
                     struck++;
                 }
-                else if(board[logicPosX + e][logicPosY] == 1)
+                else if(board[logicPosX + e][logicPosY] == HitOrMiss.COVERED_HIT)
                     notStruck++;
-                else if(board[logicPosX + e][logicPosY] == 0)
+                else if(board[logicPosX + e][logicPosY] == HitOrMiss.COVERED_MISS || board[logicPosX + e][logicPosY] == HitOrMiss.UNCOVERED_MISS)
                     break;
             }
             else
                 break;
         }
-        for (int w = 1; w < 4; w++) {
+        for (int w = 1; w < Ship.MAX_SHIP_SIZE; w++) {
             if (logicPosX - w >= 0){
-                if (board[logicPosX - w][logicPosY] == 2) {
+                if (board[logicPosX - w][logicPosY] == HitOrMiss.UNCOVERED_HIT) {
                     struckPositions.add(new Point(logicPosX - w, logicPosY));
                     struck++;
                 }
-                else if(board[logicPosX - w][logicPosY] == 1)
+                else if(board[logicPosX - w][logicPosY] == HitOrMiss.COVERED_HIT)
                     notStruck++;
-                else if(board[logicPosX - w][logicPosY] == 0)
+                else if(board[logicPosX - w][logicPosY] == HitOrMiss.COVERED_MISS || board[logicPosX - w][logicPosY] == HitOrMiss.UNCOVERED_MISS )
                     break;
             }
             else
@@ -419,7 +415,7 @@ public class BattleShipGame extends JFrame implements ActionListener {
         if (notStruck == 0){
             for (Point p : struckPositions){
                 //System.out.println("x= " + p.x + " y= " + p.y);
-                board[p.x][p.y] = 3;
+                board[p.x][p.y] = HitOrMiss.SUNK;
                 //return int = struck
             }
         }
