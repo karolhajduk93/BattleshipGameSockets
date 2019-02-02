@@ -49,10 +49,14 @@ public class Captain {
         if(shipSize == 0)
             return;
 
-        if(enemy)
-            enemyScoreDisplay.remove(shipSize);
-        else
-            myScoreDisplay.remove(shipSize);
+        if(enemy) {
+            enemyScoreDisplay.remove(Integer.valueOf(shipSize));
+            enemyScoreDisplay.add(0);
+        }
+        else {
+            myScoreDisplay.remove(Integer.valueOf(shipSize));
+            myScoreDisplay.add(0);
+        }
     }
 
     public List<Integer> getMyScoreDisplay() {

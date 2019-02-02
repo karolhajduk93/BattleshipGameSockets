@@ -90,7 +90,7 @@ public class DrawBoardAndShips extends JComponent {
         g.setColor(UIManager.getColor("Panel.background"));
         g.fillRect(550, 40, 300, 30);
 
-        //playersScoreDisplay(g);
+        playersScoreDisplay(g); /////////////////////////////////
 
         g.setColor(Color.DARK_GRAY);
 
@@ -155,7 +155,8 @@ public class DrawBoardAndShips extends JComponent {
     }
 
     private void playersScoreDisplay(Graphics2D g) {
-        /////////////////todo small squares here
+
+        //enemy ship is removed (not painted) my ship painted red (supose to be enemy ship red my nothing) [sunk 4 displayed 2] ??????
 
         final int SMALL_GRID_SIZE = 12;
 
@@ -183,7 +184,7 @@ public class DrawBoardAndShips extends JComponent {
         for (int i = 4; i > 0; i--) {
             for (int j = i; j < 5; j++) {
                 if(i == player.getMyScoreDisplay().get(me)){
-                    g.setColor(Color.BLUE.brighter());
+                    g.setColor(Color.BLUE.darker());
                     g.fillRect(myShipX[both], myShipY[both], i*12, 12);
                     me++;
                 }
@@ -199,7 +200,7 @@ public class DrawBoardAndShips extends JComponent {
                 }
                 else {
                     g.setColor(Color.RED.darker());
-                    g.fillRect(myShipX[both], myShipY[both], i*12, 12);
+                    g.fillRect(enemyShipX[both], enemyShipY[both], i*12, 12);
                 }
 
                 both++;

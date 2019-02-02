@@ -35,8 +35,6 @@ public class Client {
             }
         }
 
-        System.out.println("Client\n" + sendMessage); /////////////////////////////////////////////
-
         dataOutputStream.writeUTF(sendMessage);
         receivedMessage = dataInputStream.readUTF();
         sendMessage = "";
