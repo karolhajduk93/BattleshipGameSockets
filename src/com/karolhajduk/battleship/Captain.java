@@ -8,9 +8,10 @@ public class Captain {
 
     static final int DEFAULT_GRID_SIZE = 32;
     static final int MAX_NUMBER_OF_HITS = 20;
-    //static HitOrMiss mark;
 
-    private List<Ship> ships = new ArrayList<>();
+    private List<Ship> ships;
+    private List<Integer> myScoreDisplay;
+    private List<Integer> enemyScoreDisplay;
 
     private static int[] startShipCoordinatesX = {600,
             600, 600 + 3 * DEFAULT_GRID_SIZE + 10,
@@ -21,12 +22,51 @@ public class Captain {
             200, 200, 200,
             250, 250, 250, 250};
 
-    private HitOrMiss[][] myBoard = new HitOrMiss[10][10];
-    private HitOrMiss[][] enemyBoard = new HitOrMiss[10][10];
-    private int hitsTaken = 0;
-    private int hitsGiven = 0;
-    private GameState ready = GameState.PREPARE;
-    private boolean myTurn = false;
+    private HitOrMiss[][] myBoard;
+    private HitOrMiss[][] enemyBoard;
+    private int hitsTaken;
+    private int hitsGiven;
+    private GameState ready;
+    private boolean myTurn;
+
+    Captain(){
+        ships = new ArrayList<>();
+        initializeShips();
+        initializeScoreDisplays();
+        myBoard = new HitOrMiss[10][10];
+        enemyBoard = new HitOrMiss[10][10];
+        hitsTaken = 0;
+        hitsGiven = 0;
+        ready = GameState.PREPARE;
+        myTurn = false;
+
+        for (HitOrMiss[] boxes: myBoard) {
+            Arrays.fill(boxes, HitOrMiss.COVERED_MISS);
+        }
+    }
+
+    public void getSunkShip(int shipSize, boolean enemy){
+        if(shipSize == 0)
+            return;
+
+        if(enemy)
+            enemyScoreDisplay.remove(shipSize);
+        else
+            myScoreDisplay.remove(shipSize);
+    }
+
+    public List<Integer> getMyScoreDisplay() {
+        return myScoreDisplay;
+    }
+
+    public List<Integer> getEnemyScoreDisplay() {
+        return enemyScoreDisplay;
+    }
+
+    public void initializeScoreDisplays() {
+        myScoreDisplay = new ArrayList<>(Arrays.asList(new Integer[]{4, 3, 3, 2, 2, 2, 1, 1, 1, 1}));
+        enemyScoreDisplay = new ArrayList<>(Arrays.asList(new Integer[]{4, 3, 3, 2, 2, 2, 1, 1, 1, 1}));
+    }
 
     public int getHitsTaken() {
         return hitsTaken;
@@ -75,6 +115,7 @@ public class Captain {
         return myBoard;
     }
     public void setMyBoard(Ship ship) {
+
         int logicalX, logicalY;
         logicalX = (ship.getCoordinates().getX() - BattleShipGame.MY_BOARD_START_POSITION_X)/DEFAULT_GRID_SIZE;
         logicalY = (ship.getCoordinates().getY() - BattleShipGame.BOTH_BOARD_START_POSITION_Y)/DEFAULT_GRID_SIZE;
@@ -116,8 +157,8 @@ public class Captain {
                 k++;
             }
         }
-        for (HitOrMiss[] ints: myBoard) {
-            Arrays.fill(ints, HitOrMiss.COVERED_MISS);
+        for (HitOrMiss[] boxes: myBoard) {
+            Arrays.fill(boxes, HitOrMiss.COVERED_MISS);
         }
     }
 }

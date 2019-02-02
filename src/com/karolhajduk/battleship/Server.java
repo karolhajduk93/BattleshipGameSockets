@@ -36,6 +36,8 @@ class Server extends Thread {
             }
         }
 
+        System.out.println("Server\n" + sendMessage);//////////////////////////////////////////////////
+
         dataOutputStream.writeUTF(sendMessage);
         dataOutputStream.flush();
         sendMessage = "";

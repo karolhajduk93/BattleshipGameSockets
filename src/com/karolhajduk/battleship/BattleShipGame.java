@@ -10,7 +10,7 @@ import java.util.Optional;
 public class BattleShipGame extends JFrame implements ActionListener {
 
 
-    //Display ship count (graphic form) & removing magic numbers
+    //Display ship count (graphic form) moves dont show (misses [at all] & sunk [correctly])
     static final int MY_BOARD_START_POSITION_X = 150;
     static final int MY_BOARD_END_POSITION_X = 470;
     static final int ENEMY_BOARD_START_POSITION_X = 600;
@@ -43,7 +43,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
         this.setResizable(false);
 
         JPanel panel = new JPanel();
-        player.initializeShips();
 
         Timer timer = new Timer(20, this);
 
@@ -122,20 +121,31 @@ public class BattleShipGame extends JFrame implements ActionListener {
     @Override
     synchronized public void actionPerformed(ActionEvent e) {
         if(!coordinatesInput.isEmpty()){
+            System.out.print("Receive move: " + coordinatesInput); /////////////////////////
+
+
             String[] parts = coordinatesInput.split("\\.");
             logicPosX = Integer.parseInt(parts[0]);
             logicPosY = Integer.parseInt(parts[1]);
 
+            System.out.println(player.getMyBoard()[logicPosX][logicPosY]);
+
             if (player.getMyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_HIT) {
                 player.getMyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_HIT;
                 player.setHitsTaken(player.getHitsTaken() + 1);
-                isSunk(player.getMyBoard());
+                /*int tmp = */isSunk(player.getMyBoard());
+                //player.getSunkShip(tmp, false);
+
+                System.out.println(player.getMyBoard()[logicPosX][logicPosY] + "uncovered hit RECIVE"); ////////////////////////
 
                 if(player.getHitsTaken() == Captain.MAX_NUMBER_OF_HITS)
                     gameResult = GameResult.LOOSE;
             }
-            else if(player.getMyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_MISS)
+            else if(player.getMyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_MISS) {
                 player.getMyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_MISS;
+
+                System.out.println(player.getMyBoard()[logicPosX][logicPosY] + "uncovered miss RECIVE"); /////////////////
+            }
         }
         if(!gameResult.equals(GameResult.PENDING)) {
             repaint();
@@ -195,17 +205,23 @@ public class BattleShipGame extends JFrame implements ActionListener {
                 logicPosX = (e.getX() - ENEMY_BOARD_START_POSITION_X) / Captain.DEFAULT_GRID_SIZE;
                 logicPosY = (e.getY() - BOTH_BOARD_START_POSITION_Y) / Captain.DEFAULT_GRID_SIZE;
 
+                System.out.println("Send move: " + logicPosX + "." + logicPosY); ////////////////////////////////////////
+
                 if (player.getEnemyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_HIT) { // if covered (hit)
                     player.getEnemyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_HIT;// set as uncovered (hit)
 
+                    System.out.println("Uncovered hit SEND: " + logicPosX + "." + logicPosY);
                     //check if ship sunk
-                    isSunk(player.getEnemyBoard());
+                    /*int tmp = */isSunk(player.getEnemyBoard());
+                    //player.getSunkShip(tmp, true);
                     player.setHitsGiven(player.getHitsGiven() + 1);
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
                 }
                 else if (player.getEnemyBoard()[logicPosX][logicPosY] == HitOrMiss.COVERED_MISS) { //if covered (miss)
                     player.getEnemyBoard()[logicPosX][logicPosY] = HitOrMiss.UNCOVERED_MISS; // set as uncovered (miss)
                     coordinatesOutput = Integer.toString(logicPosX) + "." + Integer.toString(logicPosY);
+
+                    System.out.println("Uncovered miss SEND: " + logicPosX + "." + logicPosY);
 
                 }
             }
@@ -286,7 +302,8 @@ public class BattleShipGame extends JFrame implements ActionListener {
                         Client client = new Client(serversIP, player);
                     }
                     catch (IOException e){
-                        tryAgain(GameResult.DISCONNECTED);
+                        if(connected)
+                            tryAgain(GameResult.DISCONNECTED);
                     }
                     return null;
                 }
@@ -308,9 +325,6 @@ public class BattleShipGame extends JFrame implements ActionListener {
     }
 
     public void tryAgain(GameResult gameResult){
-
-        //1 - win
-        //2 - lose
 
         int decision = -1;
 
@@ -414,14 +428,11 @@ public class BattleShipGame extends JFrame implements ActionListener {
         // if sunk change it in logical table
         if (notStruck == 0){
             for (Point p : struckPositions){
-                //System.out.println("x= " + p.x + " y= " + p.y);
                 board[p.x][p.y] = HitOrMiss.SUNK;
-                //return int = struck
+                //return struck;
             }
         }
-        //else return -1; - in future to display sunk ships as small squares next to tables
-
-
+        //return 0;
     }
 }
 

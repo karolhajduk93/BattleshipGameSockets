@@ -90,6 +90,8 @@ public class DrawBoardAndShips extends JComponent {
         g.setColor(UIManager.getColor("Panel.background"));
         g.fillRect(550, 40, 300, 30);
 
+        //playersScoreDisplay(g);
+
         g.setColor(Color.DARK_GRAY);
 
         g.drawString("Your grid", 290, 390);
@@ -148,6 +150,59 @@ public class DrawBoardAndShips extends JComponent {
                 if(player.getEnemyBoard()[x][y] == HitOrMiss.SUNK) { //sunk
                     g.drawRect(x*Captain.DEFAULT_GRID_SIZE + BattleShipGame.ENEMY_BOARD_START_POSITION_X, y*Captain.DEFAULT_GRID_SIZE + BattleShipGame.BOTH_BOARD_START_POSITION_Y, Captain.DEFAULT_GRID_SIZE, Captain.DEFAULT_GRID_SIZE);
                 }
+            }
+        }
+    }
+
+    private void playersScoreDisplay(Graphics2D g) {
+        /////////////////todo small squares here
+
+        final int SMALL_GRID_SIZE = 12;
+
+        int[] myShipX = {10,
+                10, 10 + 3 * SMALL_GRID_SIZE + 3,
+                10, 10 + 2 * SMALL_GRID_SIZE + 3, 10 + (2 * SMALL_GRID_SIZE + 3) * 2,
+                10, 10 + (SMALL_GRID_SIZE + 3), 10 + 2 * (SMALL_GRID_SIZE + 3), 10 + 3 * (SMALL_GRID_SIZE + 3)};
+        int[] myShipY = {60,
+                80, 80,
+                100, 100, 100,
+                120, 120, 120, 120};
+
+        int[] enemyShipX = {935,
+                935, 935 + 3 * SMALL_GRID_SIZE + 3,
+                935, 935 + 2 * SMALL_GRID_SIZE + 3, 935 + (2 * SMALL_GRID_SIZE + 3) * 2,
+                935, 935 + (SMALL_GRID_SIZE + 3), 935 + 2 * (SMALL_GRID_SIZE + 3), 935 + 3 * (SMALL_GRID_SIZE + 3)};
+        int[] enemyShipY = {60,
+                80, 80,
+                100, 100, 100,
+                120, 120, 120, 120};
+
+        int me = 0;
+        int enemy = 0;
+        int both = 0;
+        for (int i = 4; i > 0; i--) {
+            for (int j = i; j < 5; j++) {
+                if(i == player.getMyScoreDisplay().get(me)){
+                    g.setColor(Color.BLUE.brighter());
+                    g.fillRect(myShipX[both], myShipY[both], i*12, 12);
+                    me++;
+                }
+                else {
+                    g.setColor(Color.RED.darker());
+                    g.fillRect(myShipX[both], myShipY[both], i*12, 12);
+                }
+
+                if(i == player.getEnemyScoreDisplay().get(enemy)){
+                    g.setColor(Color.BLUE.brighter());
+                    g.fillRect(enemyShipX[both], enemyShipY[both], i*12, 12);
+                    enemy++;
+                }
+                else {
+                    g.setColor(Color.RED.darker());
+                    g.fillRect(myShipX[both], myShipY[both], i*12, 12);
+                }
+
+                both++;
             }
         }
     }

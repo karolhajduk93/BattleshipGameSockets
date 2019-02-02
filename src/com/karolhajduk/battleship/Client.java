@@ -16,9 +16,9 @@ public class Client {
 
         socket = new Socket(host, 6666);
 
-        player.setReady(GameState.PLAYING);
-
         BattleShipGame.connected = socket.isConnected();
+
+        player.setReady(GameState.PLAYING);
 
         dataInputStream = new DataInputStream(socket.getInputStream());
         dataOutputStream = new DataOutputStream(socket.getOutputStream());
@@ -34,6 +34,8 @@ public class Client {
                     sendMessage += "0";
             }
         }
+
+        System.out.println("Client\n" + sendMessage); /////////////////////////////////////////////
 
         dataOutputStream.writeUTF(sendMessage);
         receivedMessage = dataInputStream.readUTF();

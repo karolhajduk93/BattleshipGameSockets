@@ -51,7 +51,7 @@ public class Ship {
             else
                 return new Rectangle(coordinates.getX() - offset, coordinates.getY() - offset, Captain.DEFAULT_GRID_SIZE + offset * 2, size*Captain.DEFAULT_GRID_SIZE + offset * 2);
     }
-    
+
     public boolean isShipOnBoard() {
         return shipOnBoard;
     }
